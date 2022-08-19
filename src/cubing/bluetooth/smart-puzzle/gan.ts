@@ -351,8 +351,13 @@ export class GanCube extends BluetoothPuzzle {
       );
       numInterveningMoves = MAX_LATEST_MOVES;
     }
-    for (const move of physicalState.latestMoves(numInterveningMoves)) {
-      // console.log(move);
+    for (const originalMove of physicalState.latestMoves(numInterveningMoves)) {
+      // console.log(originalMove);
+			const faces = "ULFRBD";
+			const faceIdx = faces.indexOf(originalMove.family);
+			const stateData = this.state.stateData;
+			const family = faces[stateData["CENTERS"].pieces.indexOf(faceIdx)];
+			const move = originalMove.modified({ family });
       this.state = this.state.applyMove(move);
       this.dispatchAlgLeaf({
         latestAlgLeaf: move,
