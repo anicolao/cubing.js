@@ -1,6 +1,6 @@
 /* tslint:disable no-bitwise */
 
-import { Quaternion } from "three";
+import { Vector3, Quaternion } from "three";
 import { Move } from "../../alg";
 import type { KPuzzle, KStateData } from "../../kpuzzle";
 import { KState } from "../../kpuzzle";
@@ -289,6 +289,62 @@ export class GanCube extends BluetoothPuzzle {
   }
 
   public INTERVAL_MS: number = DEFAULT_INTERVAL_MS;
+  public facing = "WG";
+  public oldFacing = "WG";
+
+	private quaternionToOrientationMap: [{q: Quaternion, facing: string}] = [];
+	private initQuaternionToOrientationMap = function(kpuzzle: KPuzzle) {
+		let WGOrientation = new Quaternion(0, 0, 0, 1);
+		let zMove = new Quaternion();
+		let yMove = new Quaternion();
+		let xMove = new Quaternion();
+		zMove.setFromAxisAngle(new Vector3(1, 0, 0), Math.PI/2);
+		yMove.setFromAxisAngle(new Vector3(0, 1, 0), -Math.PI/2);
+		xMove.setFromAxisAngle(new Vector3(0, 0, 1), -Math.PI/2);
+		const colours = "WOGRBY";
+		// put some dead space in so that the orientation doesn't
+		// flip back and forth due to sensor noise
+		const threshold = Math.PI/4 - 0.15;
+		let currentOrientation = WGOrientation;
+		let state: KState = kpuzzle.startState();
+		let centers = state.stateData["CENTERS"].pieces;
+		const axisToIndex = { "x": 3, "y": 0, "z": 2 };
+		const rotations = [ yMove, xMove.clone().invert(), zMove, 
+			xMove, zMove.clone().invert(), yMove.clone().invert() ]
+		function rotateCube(axis: string) {
+			let move = rotations[centers[axisToIndex[axis]]];
+			currentOrientation = currentOrientation.clone().multiply(move);
+			state = state.applyMove(axis);
+			centers = state.stateData["CENTERS"].pieces;
+		}
+		for (let zxRotation = 0; zxRotation < 6; ++zxRotation) {
+			if (zxRotation > 0 && zxRotation < 4) {
+				rotateCube("z");
+			} else if (zxRotation == 4) {
+				rotateCube("z");
+				rotateCube("x");
+			} else if (zxRotation == 5) {
+				rotateCube("x");
+				rotateCube("x");
+			}
+			for (let yRotation = 0; yRotation < 4; ++yRotation) {
+				if (yRotation > 0) {
+					rotateCube("y");
+				}
+				const topIndex = centers[axisToIndex["y"]];
+				const frontIndex = centers[axisToIndex["z"]];
+				const topFace = colours[topIndex];
+				const frontFace = colours[frontIndex];
+				debugLog([zxRotation, yRotation], topIndex, frontIndex, topFace, frontFace);
+				this.quaternionToOrientationMap.push({
+					q: currentOrientation,
+					facing: topFace + frontFace
+				});
+			}
+			rotateCube("y");
+		}
+	}
+
   private intervalHandle: number | null = null;
   private state: KState;
   private cachedFaceletStatus1Characteristic: Promise<BluetoothRemoteGATTCharacteristic>;
@@ -308,6 +364,7 @@ export class GanCube extends BluetoothPuzzle {
     super();
     this.state = kpuzzle.startState();
     this.startTrackingMoves();
+    this.initQuaternionToOrientationMap(kpuzzle);
   }
 
   public name(): string | undefined {
@@ -351,6 +408,19 @@ export class GanCube extends BluetoothPuzzle {
       );
       numInterveningMoves = MAX_LATEST_MOVES;
     }
+    const threshold = Math.PI/4 - 0.15;
+		for (let i = 0; i < this.quaternionToOrientationMap.length; ++i) {
+			let facingAngle = this.quaternionToOrientationMap[i].q;
+			let faces = this.quaternionToOrientationMap[i].facing;
+			let offset = physicalState.rotQuat().angleTo(facingAngle);
+			if (Math.abs(offset) < threshold) {
+				if (faces !== this.facing) {
+					this.oldFacing = this.facing;
+					this.facing = faces;
+					debugLog(`Rotated to ${this.facing} from ${this.oldFacing}`);
+				}
+			}
+		}
     for (const originalMove of physicalState.latestMoves(numInterveningMoves)) {
       // console.log(originalMove);
 			const faces = "ULFRBD";
@@ -367,6 +437,7 @@ export class GanCube extends BluetoothPuzzle {
         // quaternion: physicalState.rotQuat(),
       });
     }
+		this.oldFacing = this.facing;
     this.dispatchOrientation({
       timeStamp: physicalState.timeStamp,
       quaternion: physicalState.rotQuat(),
