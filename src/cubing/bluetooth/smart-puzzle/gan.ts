@@ -31,7 +31,7 @@ const ganMoveToBlockMove: { [i: number]: Move } = {
   0x0f: new Move("B"),
   0x11: new Move("B", -1),
 };
-const facings: [ string ] = [];
+const facings: string[] = [];
 const facingToRotationMove: { [k: string]: Move } = {};
 
 let homeQuatInverse: Quaternion | null = null;
@@ -296,7 +296,7 @@ export class GanCube extends BluetoothPuzzle {
   public INTERVAL_MS: number = DEFAULT_INTERVAL_MS;
   public facing = "WG";
 
-	private quaternionToOrientationMap: [{q: Quaternion, facing: string}] = [];
+	private quaternionToOrientationMap: {q: Quaternion, facing: string}[] = [];
 	private kpuzzleToFacing = function(state: KState) {
 		const colours = "WOGRBY";
 		const centers = state.stateData["CENTERS"].pieces;
@@ -315,14 +315,14 @@ export class GanCube extends BluetoothPuzzle {
 		zMove.setFromAxisAngle(new Vector3(1, 0, 0), Math.PI/2);
 		yMove.setFromAxisAngle(new Vector3(0, 1, 0), -Math.PI/2);
 		xMove.setFromAxisAngle(new Vector3(0, 0, 1), -Math.PI/2);
-		const facingStates: { string: KState } = {};
+		const facingStates: { [key: string]: KState } = {};
 		let currentOrientation = WGOrientation;
 		let state: KState = kpuzzle.startState();
-		const centers = state.stateData["CENTERS"].pieces;
+		let centers = state.stateData["CENTERS"].pieces;
 		const rotations = [ yMove, xMove.clone().invert(), zMove, 
 			xMove, zMove.clone().invert(), yMove.clone().invert() ]
 		function rotateCube(axis: string) {
-			const axisToIndex = { "x": 3, "y": 0, "z": 2 };
+			const axisToIndex: { [key: string]: number } = { "x": 3, "y": 0, "z": 2 };
 			const move = rotations[centers[axisToIndex[axis]]];
 			currentOrientation = currentOrientation.clone().multiply(move);
 			state = state.applyMove(axis);
