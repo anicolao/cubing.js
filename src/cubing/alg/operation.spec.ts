@@ -64,6 +64,34 @@ describe("operation", () => {
     ).to.be.true;
   });
 
+  it("can generate wide moves", () => {
+    expect(
+      experimentalAppendMove(new Alg("L"), new Move("x"), {
+        wideMoves: false,
+      }).isIdentical(new Alg("L x")),
+    ).to.be.true;
+    expect(
+      experimentalAppendMove(new Alg("L"), new Move("x"), {
+        wideMoves: true,
+      }).isIdentical(new Alg("r")),
+    ).to.be.true;
+    expect(
+      experimentalAppendMove(new Alg("L'"), new Move("x'"), {
+        wideMoves: true,
+      }).isIdentical(new Alg("r'")),
+    ).to.be.true;
+    expect(
+      experimentalAppendMove(new Alg("R'"), new Move("x"), {
+        wideMoves: true,
+      }).isIdentical(new Alg("l'")),
+    ).to.be.true;
+    expect(
+      experimentalAppendMove(new Alg("R"), new Move("x'"), {
+        wideMoves: true,
+      }).isIdentical(new Alg("l")),
+    ).to.be.true;
+  });
+
   it("can concat algs", () => {
     expect(
       new Alg("R U2").concat(new Alg("F' D")).isIdentical(new Alg("R U2 F' D")),

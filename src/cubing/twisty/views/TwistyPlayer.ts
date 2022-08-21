@@ -409,7 +409,7 @@ export class TwistyPlayer
   // TODO: Animate the new move.
   experimentalAddMove(
     flexibleMove: Move | string,
-    options: { coalesce?: boolean } = {},
+    options: { coalesce?: boolean; wideMoves?: boolean; sliceMoves?: boolean; } = {},
   ): void {
     this.experimentalModel.experimentalAddMove(flexibleMove, options);
   }
@@ -417,7 +417,7 @@ export class TwistyPlayer
   // TODO: Animate the new move.
   experimentalAddAlgLeaf(
     algLeaf: AlgLeaf,
-    options: { coalesce?: boolean } = {},
+    options: { coalesce?: boolean; wideMoves?: boolean; sliceMoves?: boolean } = {},
   ): void {
     this.experimentalModel.experimentalAddAlgLeaf(algLeaf, options);
   }

@@ -51,7 +51,9 @@ window.addEventListener("DOMContentLoaded", async () => {
 
     puzzle.addAlgLeafListener((e: MoveEvent) => {
       twistyPlayer.experimentalAddAlgLeaf(e.latestAlgLeaf, {
-        coalesce: true,
+        coalesce: false,
+        wideMoves: true,
+        sliceMoves: true,
       });
     });
 
