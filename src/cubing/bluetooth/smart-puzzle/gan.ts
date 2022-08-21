@@ -31,6 +31,8 @@ const ganMoveToBlockMove: { [i: number]: Move } = {
   0x0f: new Move("B"),
   0x11: new Move("B", -1),
 };
+const facings: [ string ] = [];
+const facingToRotationMove: { [k: string]: Move } = {};
 
 let homeQuatInverse: Quaternion | null = null;
 
@@ -126,13 +128,16 @@ class PhysicalState {
   // Due to the design of the Gan356i protocol, it's common to query for the
   // latest physical state and find 0 moves have been performed since the last
   // query. Therefore, it's useful to allow 0 as an argument.
-  public latestMoves(n: number): Move[] {
+  public latestMoves(n: number, rotation: string): Move[] {
     if (n < 0 || n > MAX_LATEST_MOVES) {
       throw new Error(`Must ask for 0 to 6 latest moves. (Asked for ${n})`);
     }
-    return Array.from(this.arr.slice(19 - n, 19)).map(
-      (i) => ganMoveToBlockMove[i],
-    );
+		let moves = Array.from(this.arr.slice(19 - n, 19)).map((i) => ganMoveToBlockMove[i]);
+		const rotationMove = facingToRotationMove[rotation];
+		if (rotationMove) {
+			moves.push(rotationMove);
+		}
+    return moves;
   }
 
   public debugInfo(): { arr: Uint8Array } {
@@ -290,9 +295,18 @@ export class GanCube extends BluetoothPuzzle {
 
   public INTERVAL_MS: number = DEFAULT_INTERVAL_MS;
   public facing = "WG";
-  public oldFacing = "WG";
 
 	private quaternionToOrientationMap: [{q: Quaternion, facing: string}] = [];
+	private kpuzzleToFacing = function(state: KState) {
+		const colours = "WOGRBY";
+		let centers = state.stateData["CENTERS"].pieces;
+		const axisToIndex = { "x": 3, "y": 0, "z": 2 };
+		const topIndex = centers[axisToIndex["y"]];
+		const frontIndex = centers[axisToIndex["z"]];
+		const topFace = colours[topIndex];
+		const frontFace = colours[frontIndex];
+		return topFace + frontFace;
+	}
 	private initQuaternionToOrientationMap = function(kpuzzle: KPuzzle) {
 		let WGOrientation = new Quaternion(0, 0, 0, 1);
 		let zMove = new Quaternion();
@@ -305,6 +319,7 @@ export class GanCube extends BluetoothPuzzle {
 		// put some dead space in so that the orientation doesn't
 		// flip back and forth due to sensor noise
 		const threshold = Math.PI/4 - 0.15;
+		let facingStates: { string: KState } = {};
 		let currentOrientation = WGOrientation;
 		let state: KState = kpuzzle.startState();
 		let centers = state.stateData["CENTERS"].pieces;
@@ -335,7 +350,8 @@ export class GanCube extends BluetoothPuzzle {
 				const frontIndex = centers[axisToIndex["z"]];
 				const topFace = colours[topIndex];
 				const frontFace = colours[frontIndex];
-				debugLog([zxRotation, yRotation], topIndex, frontIndex, topFace, frontFace);
+				facings.push(topFace + frontFace);
+				facingStates[topFace + frontFace] = state;
 				this.quaternionToOrientationMap.push({
 					q: currentOrientation,
 					facing: topFace + frontFace
@@ -343,6 +359,26 @@ export class GanCube extends BluetoothPuzzle {
 			}
 			rotateCube("y");
 		}
+		// For every facing, generate all the cube rotations from that
+		// facing that we want to recognize.
+		const recognizableCubeRotations = [
+			new Move("x"), new Move("x", -1), new Move("x2"),
+			new Move("y"), new Move("y", -1), new Move("y2"),
+			new Move("z"), new Move("z", -1)
+		];
+		facings.map(startFacing => {
+			recognizableCubeRotations.map(move => {
+				let endState = facingStates[startFacing].applyMove(move);
+				let centers = endState.stateData["CENTERS"].pieces;
+				const topIndex = centers[axisToIndex["y"]];
+				const frontIndex = centers[axisToIndex["z"]];
+				const topFace = colours[topIndex];
+				const frontFace = colours[frontIndex];
+				let endFacing = topFace + frontFace;
+				let key = `${endFacing}<${startFacing}`;
+				facingToRotationMove[key] = move;
+			});
+		});
 	}
 
   private intervalHandle: number | null = null;
@@ -408,6 +444,7 @@ export class GanCube extends BluetoothPuzzle {
       );
       numInterveningMoves = MAX_LATEST_MOVES;
     }
+		const oldFacing = this.kpuzzleToFacing(this.state);
     const threshold = Math.PI/4 - 0.15;
 		for (let i = 0; i < this.quaternionToOrientationMap.length; ++i) {
 			let facingAngle = this.quaternionToOrientationMap[i].q;
@@ -415,13 +452,13 @@ export class GanCube extends BluetoothPuzzle {
 			let offset = physicalState.rotQuat().angleTo(facingAngle);
 			if (Math.abs(offset) < threshold) {
 				if (faces !== this.facing) {
-					this.oldFacing = this.facing;
 					this.facing = faces;
-					debugLog(`Rotated to ${this.facing} from ${this.oldFacing}`);
+					debugLog(`Rotated to ${this.facing} from ${oldFacing}`);
 				}
 			}
 		}
-    for (const originalMove of physicalState.latestMoves(numInterveningMoves)) {
+		const rotation = this.facing + "<" + oldFacing;
+    for (const originalMove of physicalState.latestMoves(numInterveningMoves, rotation)) {
       // console.log(originalMove);
 			const faces = "ULFRBD";
 			const faceIdx = faces.indexOf(originalMove.family);
@@ -437,7 +474,6 @@ export class GanCube extends BluetoothPuzzle {
         // quaternion: physicalState.rotQuat(),
       });
     }
-		this.oldFacing = this.facing;
     this.dispatchOrientation({
       timeStamp: physicalState.timeStamp,
       quaternion: physicalState.rotQuat(),
