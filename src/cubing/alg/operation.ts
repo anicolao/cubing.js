@@ -31,7 +31,7 @@ export function experimentalAppendMove(
         (inverseMove === lastFamily && forwardMove === preLastFamily)) {
       if (Math.abs(lastMove.amount) === Math.abs(newMove.amount)) {
         const family = "MES"[index];
-        const amount = family === "E" ? -newMove.amount : newMove.amount;
+        const amount = family === "S" ? newMove.amount : -newMove.amount;
         newAlgNodes.push(newMove.modified({ family, amount }));
         return new Alg(newAlgNodes);
       }
@@ -45,9 +45,11 @@ export function experimentalAppendMove(
     const index = "xyz".indexOf(newMove.family);
     const forwardMove = "LDB"[index];
     const inverseMove = "RUF"[index];
+    const moveAlignment = newMove.amount * lastMove.amount;
+    const checkMove = moveAlignment > 0 ? forwardMove : inverseMove;
     const newAlgNodes = oldAlgNodes.slice(0, oldAlgNodes.length - 1);
     const lastFamily = lastMove.family;
-    if (forwardMove === lastFamily || inverseMove === lastFamily) {
+    if (checkMove === lastFamily) {
       if (lastMove.amount === newMove.amount) {
         const family = "ruf"[index];
         newAlgNodes.push(lastMove.modified({ family }));

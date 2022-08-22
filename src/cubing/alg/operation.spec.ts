@@ -4,6 +4,15 @@ import { Alg } from "./Alg";
 import { experimentalAppendMove } from "./operation";
 import { Move } from "./alg-nodes";
 
+function testAppendMoveTransform({ start, move, result, options }) {
+  it(`experimentalAppendMove of ${start} + ${move} => ${result}`, () =>
+    expect(
+      experimentalAppendMove(
+      	new Alg(start), new Move(move), options).toString(),
+    ).to.equal(result)
+	);
+}
+
 describe("operation", () => {
   it("can append moves", () => {
     expect(
@@ -91,6 +100,54 @@ describe("operation", () => {
       }).isIdentical(new Alg("l")),
     ).to.be.true;
   });
+
+	testAppendMoveTransform({
+		start: "L3", move: "L", result: "", 
+		options: { coalesce: true, mod: 4, }
+	});
+	testAppendMoveTransform({
+		start: "L3", move: "L3", result: "L2", 
+		options: { coalesce: true, mod: 4, }
+	});
+	testAppendMoveTransform({
+		start: "L3", move: "L6", result: "L", 
+		options: { coalesce: true, mod: 2, }
+	});
+
+	testAppendMoveTransform({
+		start: "L", move: "x", result: "L x", options: { wideMoves: false, }
+	});
+	testAppendMoveTransform({
+		start: "L", move: "x", result: "r", options: { wideMoves: true, }
+	});
+	testAppendMoveTransform({
+		start: "L'", move: "x'", result: "r'", options: { wideMoves: true, }
+	});
+	testAppendMoveTransform({
+		start: "R", move: "x'", result: "l", options: { wideMoves: true, }
+	});
+	testAppendMoveTransform({
+		start: "R", move: "x", result: "R x", options: { wideMoves: true, }
+	});
+	testAppendMoveTransform({
+		start: "R'", move: "x", result: "l'", options: { wideMoves: true, }
+	});
+	testAppendMoveTransform({
+		start: "R' R", move: "x", result: "R' R x",
+		options: { wideMoves: true }
+	});
+	testAppendMoveTransform({
+		start: "R' R", move: "x", result: "R' R x",
+		options: { wideMoves: true, sliceMoves: true }
+	});
+	testAppendMoveTransform({
+		start: "L' R", move: "x'", result: "M",
+		options: { wideMoves: true, sliceMoves: true }
+	});
+	testAppendMoveTransform({
+		start: "U' D", move: "y", result: "E'",
+		options: { wideMoves: true, sliceMoves: true }
+	});
 
   it("can concat algs", () => {
     expect(
