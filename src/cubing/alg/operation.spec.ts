@@ -113,6 +113,10 @@ describe("operation", () => {
 		start: "L3", move: "L6", result: "L", 
 		options: { coalesce: true, mod: 2, }
 	});
+	testAppendMoveTransform({
+		start: "L", move: "L", result: "L'", 
+		options: { coalesce: true, mod: 3, }
+	});
 
 	testAppendMoveTransform({
 		start: "L", move: "x", result: "L x", options: { wideMoves: false, }
