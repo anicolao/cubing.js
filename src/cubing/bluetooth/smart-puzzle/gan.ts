@@ -318,7 +318,9 @@ export class GanCube extends BluetoothPuzzle {
 		const facingStates: { [key: string]: KState } = {};
 		let currentOrientation = WGOrientation;
 		let state: KState = kpuzzle.startState();
+		// centers is in "ULFRBD" order
 		let centers = state.stateData["CENTERS"].pieces;
+		// so rotations correspond to ULFRDB order
 		const rotations = [ yMove, xMove.clone().invert(), zMove, 
 			xMove, zMove.clone().invert(), yMove.clone().invert() ]
 		function rotateCube(axis: string) {
@@ -442,14 +444,16 @@ export class GanCube extends BluetoothPuzzle {
 			const offset = physicalState.rotQuat().angleTo(facingAngle);
 			if (Math.abs(offset) < threshold) {
 				if (faces !== this.facing) {
+					debugLog(`Rotated to ${faces} from ${oldFacing} (=? ${this.facing})`);
 					this.facing = faces;
-					debugLog(`Rotated to ${this.facing} from ${oldFacing}`);
 				}
 			}
 		}
 		const rotation = this.facing + "<" + oldFacing;
     for (const originalMove of physicalState.latestMoves(numInterveningMoves, rotation)) {
       // console.log(originalMove);
+			// TODO: deal with 'x', 'y', 'z' families, and assertion fail or console log
+			// an error if we are in an unexpected case
 			const faces = "ULFRBD";
 			const faceIdx = faces.indexOf(originalMove.family);
 			const stateData = this.state.stateData;
