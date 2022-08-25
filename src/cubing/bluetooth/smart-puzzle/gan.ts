@@ -452,13 +452,7 @@ export class GanCube extends BluetoothPuzzle {
 		const rotation = this.facing + "<" + oldFacing;
     for (const originalMove of physicalState.latestMoves(numInterveningMoves, rotation)) {
       // console.log(originalMove);
-			// TODO: deal with 'x', 'y', 'z' families, and assertion fail or console log
-			// an error if we are in an unexpected case
-			const faces = "ULFRBD";
-			const faceIdx = faces.indexOf(originalMove.family);
-			const stateData = this.state.stateData;
-			const family = faces[stateData["CENTERS"].pieces.indexOf(faceIdx)];
-			const move = originalMove.modified({ family });
+			const move = this.transformMove(originalMove, this.state.stateData);
       this.state = this.state.applyMove(move);
       this.dispatchAlgLeaf({
         latestAlgLeaf: move,
@@ -473,6 +467,15 @@ export class GanCube extends BluetoothPuzzle {
       quaternion: physicalState.rotQuat(),
     });
     this.lastMoveCounter = physicalState.moveCounter();
+  }
+
+  static transformMove(originalMove: Move, stateData: KStateData) {
+		// TODO: deal with 'x', 'y', 'z' families, and assertion fail or console log
+		// an error if we are in an unexpected case
+    const faces = "ULFRBD";
+    const faceIdx = faces.indexOf(originalMove.family);
+    const family = faces[stateData["CENTERS"].pieces.indexOf(faceIdx)];
+    return originalMove.modified({ family });
   }
 
   public async getBattery(): Promise<number> {
