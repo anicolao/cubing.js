@@ -470,10 +470,14 @@ export class GanCube extends BluetoothPuzzle {
   }
 
   static transformMove(originalMove: Move, stateData: KStateData) {
-		// TODO: deal with 'x', 'y', 'z' families, and assertion fail or console log
-		// an error if we are in an unexpected case
-    const faces = "ULFRBD";
+    const faces = "ULFRBDxyz";
     const faceIdx = faces.indexOf(originalMove.family);
+    if (faceIdx > 6) {
+      return originalMove; // don't touch face rotations
+    }
+    if (faceIdx < 0) {
+      throw new Error("Failed to find face " + originalMove.family);
+    }
     const family = faces[stateData["CENTERS"].pieces.indexOf(faceIdx)];
     return originalMove.modified({ family });
   }

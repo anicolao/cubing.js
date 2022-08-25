@@ -52,4 +52,8 @@ describe("GanCube", () => {
       validateTransform({ from: new Move(face), to: new Move(expectedFace), afterRotations: new Alg('x') });
     });
   }
+
+  it("should throw an error on unexpected faces", () => {
+    expect(() => validateTransform({ from: new Move("M"), to: new Move("M") })).to.throw("Failed to find face M");
+  });
 });
