@@ -1,9 +1,10 @@
+import { Quaternion } from "three";
 import { expect } from "../../../test/chai-workaround";
 import { Move, Alg } from "../../alg";
 import { KPuzzle } from "../../kpuzzle";
 import { cube3x3x3KPuzzleDefinition } from "../../puzzles/implementations/dynamic/3x3x3/3x3x3.kpuzzle.json";
 
-import { GanCube } from "./gan";
+import { GanCube, homeQuatInverse, PhysicalState } from "./gan";
 
 describe("GanCube", () => {
   const kpuzzle = new KPuzzle(cube3x3x3KPuzzleDefinition);
@@ -23,6 +24,15 @@ describe("GanCube", () => {
     expect(newMove.toString()).to.equal(to.toString());
     expect(newMove.isIdentical(to)).to.be.true;
   }
+
+  function buildGanCube(){
+    return new GanCube(kpuzzle, {} as BluetoothRemoteGATTService,
+      {} as BluetoothRemoteGATTServer,
+      {} as BluetoothRemoteGATTCharacteristic,
+      0,
+      null);
+  }
+
   const cubeRotationCases = ["x", "y", "z"];
   for (const cubeRotation of cubeRotationCases) {
     it(`should not touch '${cubeRotation}' moves`, () => {
@@ -55,5 +65,23 @@ describe("GanCube", () => {
 
   it("should throw an error on unexpected faces", () => {
     expect(() => validateTransform({ from: new Move("M"), to: new Move("M") })).to.throw("Failed to find face M");
+  });
+
+  it("should be created", () => {
+    buildGanCube();
+  });
+
+  describe("applyMoves", () => {
+    it("apply moves", () => {
+      const ganCube = buildGanCube();
+      // we think this rotation goes from WG -> YG
+      const homeState = new Uint8Array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 140, 12, 6, 6, 6, 5, 3]);
+      new PhysicalState(new DataView(homeState.buffer), 0).rotQuat();
+      //expect(homeQuatInverse?.toString()).to.equal("foo");
+      const array = new Uint8Array([0x0, 0x0, 0, 0x40, 0, 0, 0, 0, 0, 0, 0, 0, 140, 12, 6, 6, 6, 5, 3]);
+      const physicalState = new PhysicalState(new DataView(array.buffer), 0);
+      ganCube.applyMoves(physicalState, 0);
+      expect(ganCube.kpuzzleToFacing(ganCube.state)).to.equal("YG");
+    })
   });
 });

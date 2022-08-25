@@ -34,7 +34,7 @@ const ganMoveToBlockMove: { [i: number]: Move } = {
 const facings: string[] = [];
 const facingToRotationMove: { [k: string]: Move } = {};
 
-let homeQuatInverse: Quaternion | null = null;
+export let homeQuatInverse: Quaternion | null = null;
 
 function probablyDecodedCorrectly(data: Uint8Array): boolean {
   return (
@@ -77,7 +77,7 @@ async function decryptState(
   throw new Error("Invalid Gan cube state");
 }
 
-class PhysicalState {
+export class PhysicalState {
   public static async read(
     characteristic: BluetoothRemoteGATTCharacteristic,
     aesKey: CryptoKey | null,
@@ -87,13 +87,13 @@ class PhysicalState {
       aesKey,
     );
     const timeStamp = Date.now();
-    // console.log(value);
+    console.log(value);
     return new PhysicalState(new DataView(value.buffer), timeStamp);
   }
 
   private arr: Uint8Array;
   private arrLen = 19;
-  private constructor(private dataView: DataView, public timeStamp: number) {
+  public constructor(private dataView: DataView, public timeStamp: number) {
     this.arr = new Uint8Array(dataView.buffer);
     if (this.arr.length !== this.arrLen) {
       throw new Error("Unexpected array length");
@@ -297,7 +297,7 @@ export class GanCube extends BluetoothPuzzle {
   public facing = "WG";
 
 	private quaternionToOrientationMap: {q: Quaternion, facing: string}[] = [];
-	private kpuzzleToFacing = function(state: KState) {
+	public kpuzzleToFacing = function(state: KState) {
 		const colours = "WOGRBY";
 		const centers = state.stateData["CENTERS"].pieces;
 		const axisToIndex = { "x": 3, "y": 0, "z": 2 };
@@ -359,7 +359,7 @@ export class GanCube extends BluetoothPuzzle {
 		const recognizableCubeRotations = [
 			new Move("x"), new Move("x", -1), new Move("x2"),
 			new Move("y"), new Move("y", -1), new Move("y2"),
-			new Move("z"), new Move("z", -1)
+			new Move("z"), new Move("z", -1), new Move("z2")
 		];
 		facings.map(startFacing => {
 			recognizableCubeRotations.map(move => {
@@ -372,14 +372,14 @@ export class GanCube extends BluetoothPuzzle {
 	}
 
   private intervalHandle: number | null = null;
-  private state: KState;
+  public state: KState;
   private cachedFaceletStatus1Characteristic: Promise<BluetoothRemoteGATTCharacteristic>;
 
   private cachedFaceletStatus2Characteristic: Promise<BluetoothRemoteGATTCharacteristic>;
 
   private cachedActualAngleAndBatteryCharacteristic: Promise<BluetoothRemoteGATTCharacteristic>;
 
-  private constructor(
+  public constructor(
     private kpuzzle: KPuzzle,
     private service: BluetoothRemoteGATTService,
     private server: BluetoothRemoteGATTServer,
@@ -434,39 +434,42 @@ export class GanCube extends BluetoothPuzzle {
       );
       numInterveningMoves = MAX_LATEST_MOVES;
     }
-		const oldFacing = this.kpuzzleToFacing(this.state);
-		// put some dead space in so that the orientation doesn't
-		// flip back and forth due to sensor noise
-    const threshold = Math.PI/4 - 0.15;
-		for (let i = 0; i < this.quaternionToOrientationMap.length; ++i) {
-			const facingAngle = this.quaternionToOrientationMap[i].q;
-			const faces = this.quaternionToOrientationMap[i].facing;
-			const offset = physicalState.rotQuat().angleTo(facingAngle);
-			if (Math.abs(offset) < threshold) {
-				if (faces !== this.facing) {
-					debugLog(`Rotated to ${faces} from ${oldFacing} (=? ${this.facing})`);
-					this.facing = faces;
-				}
-			}
-		}
-		const rotation = this.facing + "<" + oldFacing;
+		this.applyMoves(physicalState, numInterveningMoves);
+    this.dispatchOrientation({
+      timeStamp: physicalState.timeStamp,
+      quaternion: physicalState.rotQuat(),
+    });
+    this.lastMoveCounter = physicalState.moveCounter();
+  }
+
+  public applyMoves(physicalState: PhysicalState, numInterveningMoves: number) {
+    const oldFacing = this.kpuzzleToFacing(this.state);
+    // put some dead space in so that the orientation doesn't
+    // flip back and forth due to sensor noise
+    const threshold = Math.PI / 4 - 0.15;
+    for (let i = 0; i < this.quaternionToOrientationMap.length; ++i) {
+      const facingAngle = this.quaternionToOrientationMap[i].q;
+      const faces = this.quaternionToOrientationMap[i].facing;
+      const offset = physicalState.rotQuat().angleTo(facingAngle);
+      if (Math.abs(offset) < threshold) {
+        if (faces !== this.facing) {
+          debugLog(`Rotated to ${faces} from ${oldFacing} (=? ${this.facing})`);
+          this.facing = faces;
+        }
+      }
+    }
+    const rotation = this.facing + "<" + oldFacing;
     for (const originalMove of physicalState.latestMoves(numInterveningMoves, rotation)) {
       // console.log(originalMove);
-			const move = this.transformMove(originalMove, this.state.stateData);
+      const move = GanCube.transformMove(originalMove, this.state.stateData);
       this.state = this.state.applyMove(move);
       this.dispatchAlgLeaf({
         latestAlgLeaf: move,
         timeStamp: physicalState.timeStamp,
         debug: physicalState.debugInfo(),
         state: this.state,
-        // quaternion: physicalState.rotQuat(),
       });
     }
-    this.dispatchOrientation({
-      timeStamp: physicalState.timeStamp,
-      quaternion: physicalState.rotQuat(),
-    });
-    this.lastMoveCounter = physicalState.moveCounter();
   }
 
   static transformMove(originalMove: Move, stateData: KStateData) {
