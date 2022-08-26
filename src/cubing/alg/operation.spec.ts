@@ -28,140 +28,72 @@ function tests({ test, options, tests }) {
 }
 
 describe("operation", () => {
-  testAppendMoveTransform({
-    test: "can append moves",
-    start: "R U R'",
-    move: "U2",
-    result: "R U R' U2"
-  });
   tests({ 
     test: "can append moves",
     options: {},
     tests: [
+			"R U R' + U2 = R U R' U2",
       "R U R' + R2' = R U R' R2'",
       "R U R' + R = R U R' R",
     ],
   });
 
-  it("can coalesce appended moves", () => {
-    expect(
-      experimentalAppendMove(new Alg("R U R'"), new Move("U2"), {
-        coalesce: true,
-      }).isIdentical(new Alg("R U R' U2")),
-    ).to.be.true;
-    expect(
-      experimentalAppendMove(new Alg("R U R'"), new Move("R", -2), {
-        coalesce: true,
-      }).isIdentical(new Alg("R U R3'")),
-    ).to.be.true;
-    expect(
-      experimentalAppendMove(new Alg("R U R'"), new Move("R"), {
-        coalesce: true,
-      }).isIdentical(new Alg("R U")),
-    ).to.be.true;
+  tests({
+  	test: "can coalesce appended moves",
+		options: { coalesce: true, },
+		tests: [
+			"R U R' + U2 = R U R' U2",
+			"R U R' + R2' = R U R3'",
+			"R U R' + R = R U",
+		],
   });
 
-  it("computes mod offsets correctly", () => {
-    expect(
-      experimentalAppendMove(new Alg("L3"), new Move("L"), {
-        coalesce: true, mod: 4,
-      }).isIdentical(new Alg("")),
-    ).to.be.true;
-    expect(
-      experimentalAppendMove(new Alg("L3"), new Move("L3"), {
-        coalesce: true, mod: 4,
-      }).isIdentical(new Alg("L2")),
-    ).to.be.true;
-    expect(
-      experimentalAppendMove(new Alg("L3"), new Move("L6"), {
-        coalesce: true, mod: 4,
-      }).isIdentical(new Alg("L")),
-    ).to.be.true;
-    expect(
-      experimentalAppendMove(new Alg("L"), new Move("L"), {
-        coalesce: true, mod: 3,
-      }).isIdentical(new Alg("L'")),
-    ).to.be.true;
-  });
-
-  it("can generate wide moves", () => {
-    expect(
-      experimentalAppendMove(new Alg("L"), new Move("x"), {
-        wideMoves: false,
-      }).isIdentical(new Alg("L x")),
-    ).to.be.true;
-    expect(
-      experimentalAppendMove(new Alg("L"), new Move("x"), {
-        wideMoves: true,
-      }).isIdentical(new Alg("r")),
-    ).to.be.true;
-    expect(
-      experimentalAppendMove(new Alg("L'"), new Move("x'"), {
-        wideMoves: true,
-      }).isIdentical(new Alg("r'")),
-    ).to.be.true;
-    expect(
-      experimentalAppendMove(new Alg("R'"), new Move("x"), {
-        wideMoves: true,
-      }).isIdentical(new Alg("l'")),
-    ).to.be.true;
-    expect(
-      experimentalAppendMove(new Alg("R"), new Move("x'"), {
-        wideMoves: true,
-      }).isIdentical(new Alg("l")),
-    ).to.be.true;
-  });
-
-	testAppendMoveTransform({
-		start: "L3", move: "L", result: "", 
-		options: { coalesce: true, mod: 4, }
+  tests({
+  	test: "mod 4 works as expected",
+  	options: { coalesce: true, mod: 4, },
+		tests: [
+			"L3 + L = ", 
+			"L3 + L3 = L2", 
+			"L3 + L6 = L", 
+		],
 	});
-	testAppendMoveTransform({
-		start: "L3", move: "L3", result: "L2", 
-		options: { coalesce: true, mod: 4, }
-	});
-	testAppendMoveTransform({
-		start: "L3", move: "L6", result: "L", 
-		options: { coalesce: true, mod: 2, }
-	});
-	testAppendMoveTransform({
-		start: "L", move: "L", result: "L'", 
-		options: { coalesce: true, mod: 3, }
+  tests({
+  	test: "mod 3 works as expected",
+  	options: { coalesce: true, mod: 3, },
+		tests: [
+			"L + L = L'", 
+			"L3 + L3 = ", 
+			"L3 + L6 = ", 
+		],
 	});
 
-	testAppendMoveTransform({
-		start: "L", move: "x", result: "L x", options: { wideMoves: false, }
+	tests({
+		test: "wide moves not processed by default",
+		options: {},
+		tests: [ "L + x = L x" ],
 	});
-	testAppendMoveTransform({
-		start: "L", move: "x", result: "r", options: { wideMoves: true, }
+	tests({
+		test: "wide moves",
+		options: { wideMoves: true, },
+		tests: [
+			"L + x = r",
+			"L' + x' = r'",
+			"R + x' = l",
+			"R + x = R x",
+			"R' + x = l'",
+			"R' R + x = R' R x",
+		],
 	});
-	testAppendMoveTransform({
-		start: "L'", move: "x'", result: "r'", options: { wideMoves: true, }
-	});
-	testAppendMoveTransform({
-		start: "R", move: "x'", result: "l", options: { wideMoves: true, }
-	});
-	testAppendMoveTransform({
-		start: "R", move: "x", result: "R x", options: { wideMoves: true, }
-	});
-	testAppendMoveTransform({
-		start: "R'", move: "x", result: "l'", options: { wideMoves: true, }
-	});
-	testAppendMoveTransform({
-		start: "R' R", move: "x", result: "R' R x",
-		options: { wideMoves: true }
-	});
-	testAppendMoveTransform({
-		start: "R' R", move: "x", result: "R' R x",
-		options: { wideMoves: true, sliceMoves: true }
-	});
-	testAppendMoveTransform({
-		start: "L' R", move: "x'", result: "M",
-		options: { wideMoves: true, sliceMoves: true }
-	});
-	testAppendMoveTransform({
-		start: "U' D", move: "y", result: "E'",
-		options: { wideMoves: true, sliceMoves: true }
+	tests({
+		test: "slice moves",
+		options: { wideMoves: true, sliceMoves: true, },
+		tests: [
+			"R' R + x = R' R x",
+			"L' R + x' = M",
+			"L R' + x = M'",
+			"L' R + x = L' R x",
+			"U' D + y = E'",
+		],
 	});
 
   it("can concat algs", () => {

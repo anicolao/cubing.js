@@ -29,12 +29,18 @@ export function experimentalAppendMove(
     const preLastFamily = preLastMove.family;
     if ((forwardMove === lastFamily && inverseMove === preLastFamily) ||
         (inverseMove === lastFamily && forwardMove === preLastFamily)) {
-      if (Math.abs(lastMove.amount) === Math.abs(newMove.amount)) {
-        const family = "MES"[index];
-        const amount = family === "S" ? newMove.amount : -newMove.amount;
-        newAlgNodes.push(newMove.modified({ family, amount }));
-        return new Alg(newAlgNodes);
-      }
+			if (lastMove.amount === -preLastMove.amount) {
+				let checkMove = lastMove;
+				if (inverseMove === preLastFamily) {
+					checkMove = preLastMove;
+				}
+				if (checkMove.amount === -newMove.amount) {
+					const family = "MES"[index];
+					const amount = family === "S" ? newMove.amount : -newMove.amount;
+					newAlgNodes.push(newMove.modified({ family, amount }));
+					return new Alg(newAlgNodes);
+				}
+			}
     }
   } 
   if (options?.wideMoves && 
