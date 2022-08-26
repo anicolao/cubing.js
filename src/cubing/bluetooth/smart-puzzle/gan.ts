@@ -87,7 +87,7 @@ export class PhysicalState {
       aesKey,
     );
     const timeStamp = Date.now();
-    console.log(value);
+    // console.log(value);
     return new PhysicalState(new DataView(value.buffer), timeStamp);
   }
 

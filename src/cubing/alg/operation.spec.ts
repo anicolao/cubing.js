@@ -13,23 +13,34 @@ function testAppendMoveTransform({ start, move, result, options }) {
 	);
 }
 
+function tests({ test, options, tests }) {
+  tests.map(s => {
+    let parts = s.split(/[+=]/);
+    expect(parts.length).to.equal(3);
+    testAppendMoveTransform({
+      test,
+      start: parts[0].trim(),
+      move: parts[1].trim(),
+      result: parts[2].trim(),
+      options
+    })
+  });
+}
+
 describe("operation", () => {
-  it("can append moves", () => {
-    expect(
-      experimentalAppendMove(new Alg("R U R'"), new Move("U2")).isIdentical(
-        new Alg("R U R' U2"),
-      ),
-    ).to.be.true;
-    expect(
-      experimentalAppendMove(new Alg("R U R'"), new Move("R", -2)).isIdentical(
-        new Alg("R U R' R2'"),
-      ),
-    ).to.be.true;
-    expect(
-      experimentalAppendMove(new Alg("R U R'"), new Move("R")).isIdentical(
-        new Alg("R U R' R"),
-      ),
-    ).to.be.true;
+  testAppendMoveTransform({
+    test: "can append moves",
+    start: "R U R'",
+    move: "U2",
+    result: "R U R' U2"
+  });
+  tests({ 
+    test: "can append moves",
+    options: {},
+    tests: [
+      "R U R' + R2' = R U R' R2'",
+      "R U R' + R = R U R' R",
+    ],
   });
 
   it("can coalesce appended moves", () => {
