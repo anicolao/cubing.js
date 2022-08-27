@@ -14,7 +14,8 @@ export function experimentalAppendMove(
   const oldAlgNodes = Array.from(alg.childAlgNodes());
   const lastMove = oldAlgNodes[oldAlgNodes.length - 1] as Move | undefined;
   const preLastMove = oldAlgNodes[oldAlgNodes.length - 2] as Move | undefined;
-  if (options?.sliceMoves && 
+  if (
+    options?.sliceMoves &&
     "xyz".indexOf(newMove.family) !== -1 &&
     lastMove &&
     lastMove.quantum &&
@@ -27,23 +28,26 @@ export function experimentalAppendMove(
     const newAlgNodes = oldAlgNodes.slice(0, oldAlgNodes.length - 2);
     const lastFamily = lastMove.family;
     const preLastFamily = preLastMove.family;
-    if ((forwardMove === lastFamily && inverseMove === preLastFamily) ||
-        (inverseMove === lastFamily && forwardMove === preLastFamily)) {
-			if (lastMove.amount === -preLastMove.amount) {
-				let checkMove = lastMove;
-				if (inverseMove === preLastFamily) {
-					checkMove = preLastMove;
-				}
-				if (checkMove.amount === -newMove.amount) {
-					const family = "MES"[index];
-					const amount = family === "S" ? newMove.amount : -newMove.amount;
-					newAlgNodes.push(newMove.modified({ family, amount }));
-					return new Alg(newAlgNodes);
-				}
-			}
+    if (
+      (forwardMove === lastFamily && inverseMove === preLastFamily) ||
+      (inverseMove === lastFamily && forwardMove === preLastFamily)
+    ) {
+      if (lastMove.amount === -preLastMove.amount) {
+        let checkMove = lastMove;
+        if (inverseMove === preLastFamily) {
+          checkMove = preLastMove;
+        }
+        if (checkMove.amount === -newMove.amount) {
+          const family = "MES"[index];
+          const amount = family === "S" ? newMove.amount : -newMove.amount;
+          newAlgNodes.push(newMove.modified({ family, amount }));
+          return new Alg(newAlgNodes);
+        }
+      }
     }
-  } 
-  if (options?.wideMoves && 
+  }
+  if (
+    options?.wideMoves &&
     "xyz".indexOf(newMove.family) !== -1 &&
     lastMove &&
     lastMove.quantum
@@ -67,7 +71,7 @@ export function experimentalAppendMove(
         return new Alg(newAlgNodes);
       }
     }
-  } 
+  }
   if (
     options?.coalesce &&
     lastMove &&

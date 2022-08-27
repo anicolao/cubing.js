@@ -4,24 +4,48 @@ import { Alg } from "./Alg";
 import { experimentalAppendMove } from "./operation";
 import { Move } from "./alg-nodes";
 
-function testAppendMoveTransform({ test, start, move, result, options, concat_algs }: {test: string; start: string; move: string; result: string; options: any, concat_algs?: boolean }) {
+function testAppendMoveTransform({
+  test,
+  start,
+  move,
+  result,
+  options,
+  concat_algs,
+}: {
+  test: string;
+  start: string;
+  move: string;
+  result: string;
+  options: any;
+  concat_algs?: boolean;
+}) {
   if (concat_algs) {
     it(`${test} Alg.concat of ${start} + ${move} => ${result}`, () =>
-       expect((new Alg(start)).concat(new Alg(move)).toString())
-         .to.equal(result)
-      );
+      expect(new Alg(start).concat(new Alg(move)).toString()).to.equal(result));
   } else {
     it(`${test} experimentalAppendMove of ${start} + ${move} => ${result}`, () =>
-       expect(
-         experimentalAppendMove(
-           new Alg(start), new Move(move), options).toString(),
-       ).to.equal(result)
-      );
+      expect(
+        experimentalAppendMove(
+          new Alg(start),
+          new Move(move),
+          options,
+        ).toString(),
+      ).to.equal(result));
   }
 }
 
-function tests({ test, options, tests, concat_algs }: {test: string; options: any; tests: string[]; concat_algs?: boolean}) {
-  tests.map(s => {
+function tests({
+  test,
+  options,
+  tests,
+  concat_algs,
+}: {
+  test: string;
+  options: any;
+  tests: string[];
+  concat_algs?: boolean;
+}) {
+  tests.map((s) => {
     const parts = s.split(/[+=]/);
     expect(parts.length).to.equal(3);
     testAppendMoveTransform({
@@ -31,12 +55,12 @@ function tests({ test, options, tests, concat_algs }: {test: string; options: an
       result: parts[2].trim(),
       options,
       concat_algs,
-    })
+    });
   });
 }
 
 describe("operation", () => {
-  tests({ 
+  tests({
     test: "can append moves",
     options: {},
     tests: [
@@ -48,7 +72,7 @@ describe("operation", () => {
 
   tests({
     test: "can coalesce appended moves",
-    options: { coalesce: true, },
+    options: { coalesce: true },
     tests: [
       "R U R' + U2 = R U R' U2",
       "R U R' + R2' = R U R3'",
@@ -58,31 +82,23 @@ describe("operation", () => {
 
   tests({
     test: "mod 4 works as expected",
-    options: { coalesce: true, mod: 4, },
-    tests: [
-      "L3 + L = ", 
-      "L3 + L3 = L2", 
-      "L3 + L6 = L", 
-    ],
+    options: { coalesce: true, mod: 4 },
+    tests: ["L3 + L = ", "L3 + L3 = L2", "L3 + L6 = L"],
   });
   tests({
     test: "mod 3 works as expected",
-    options: { coalesce: true, mod: 3, },
-    tests: [
-      "L + L = L'", 
-      "L3 + L3 = ", 
-      "L3 + L6 = ", 
-    ],
+    options: { coalesce: true, mod: 3 },
+    tests: ["L + L = L'", "L3 + L3 = ", "L3 + L6 = "],
   });
 
   tests({
     test: "wide moves not processed by default",
     options: {},
-    tests: [ "L + x = L x" ],
+    tests: ["L + x = L x"],
   });
   tests({
     test: "wide moves",
-    options: { wideMoves: true, },
+    options: { wideMoves: true },
     tests: [
       "L + x = r",
       "L' + x' = r'",
@@ -94,7 +110,7 @@ describe("operation", () => {
   });
   tests({
     test: "slice moves",
-    options: { wideMoves: true, sliceMoves: true, },
+    options: { wideMoves: true, sliceMoves: true },
     tests: [
       "R' R + x = R' R x",
       "L' R + x' = M",
@@ -108,13 +124,9 @@ describe("operation", () => {
     test: "can concat algs",
     options: {},
     concat_algs: true,
-    tests: [
-      "R U2 + F' D = R U2 F' D",
-      "R U2 + U R' = R U2 U R'",
-    ],
+    tests: ["R U2 + F' D = R U2 F' D", "R U2 + U R' = R U2 U R'"],
   });
   expect(
-    Array.from(new Alg("R U2").concat(new Alg("U R'")).childAlgNodes())
-      .length,
+    Array.from(new Alg("R U2").concat(new Alg("U R'")).childAlgNodes()).length,
   ).to.equal(4);
 });

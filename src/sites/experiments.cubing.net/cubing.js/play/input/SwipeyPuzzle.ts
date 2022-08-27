@@ -6,7 +6,13 @@ import {
   TwistyPlayer,
   TwistyPlayerConfig,
 } from "../../../../../cubing/twisty";
-import { coalesce, getSetup, PuzzleID, sliceMoves, wideMoves } from "../url-params";
+import {
+  coalesce,
+  getSetup,
+  PuzzleID,
+  sliceMoves,
+  wideMoves,
+} from "../url-params";
 import { SwipeGrid, themes, ThemeType } from "./SwipeGrid";
 
 const DEFAULT_THEME: ThemeType = "transparent-grid";
