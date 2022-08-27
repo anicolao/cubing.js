@@ -4,14 +4,14 @@ import { Alg } from "./Alg";
 import { experimentalAppendMove } from "./operation";
 import { Move } from "./alg-nodes";
 
-function testAppendMoveTransform({ start, move, result, options, concat_algs }) {
+function testAppendMoveTransform({ test, start, move, result, options, concat_algs }: {test: string; start: string; move: string; result: string; options: any, concat_algs?: boolean }) {
   if (concat_algs) {
-    it(`Alg.concat of ${start} + ${move} => ${result}`, () =>
+    it(`${test} Alg.concat of ${start} + ${move} => ${result}`, () =>
        expect((new Alg(start)).concat(new Alg(move)).toString())
          .to.equal(result)
       );
   } else {
-    it(`experimentalAppendMove of ${start} + ${move} => ${result}`, () =>
+    it(`${test} experimentalAppendMove of ${start} + ${move} => ${result}`, () =>
        expect(
          experimentalAppendMove(
            new Alg(start), new Move(move), options).toString(),
@@ -20,9 +20,9 @@ function testAppendMoveTransform({ start, move, result, options, concat_algs }) 
   }
 }
 
-function tests({ test, options, tests, concat_algs }) {
+function tests({ test, options, tests, concat_algs }: {test: string; options: any; tests: string[]; concat_algs?: boolean}) {
   tests.map(s => {
-    let parts = s.split(/[+=]/);
+    const parts = s.split(/[+=]/);
     expect(parts.length).to.equal(3);
     testAppendMoveTransform({
       test,

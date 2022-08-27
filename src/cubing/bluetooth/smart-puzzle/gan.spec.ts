@@ -1,10 +1,9 @@
-import { Quaternion } from "three";
 import { expect } from "../../../test/chai-workaround";
 import { Move, Alg } from "../../alg";
 import { KPuzzle } from "../../kpuzzle";
 import { cube3x3x3KPuzzleDefinition } from "../../puzzles/implementations/dynamic/3x3x3/3x3x3.kpuzzle.json";
 
-import { GanCube, homeQuatInverse, PhysicalState } from "./gan";
+import { GanCube, PhysicalState } from "./gan";
 
 describe("GanCube", () => {
   const kpuzzle = new KPuzzle(cube3x3x3KPuzzleDefinition);
