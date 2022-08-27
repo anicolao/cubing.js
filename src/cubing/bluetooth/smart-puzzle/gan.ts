@@ -475,7 +475,7 @@ export class GanCube extends BluetoothPuzzle {
   static transformMove(originalMove: Move, stateData: KStateData) {
     const faces = "ULFRBDxyz";
     const faceIdx = faces.indexOf(originalMove.family);
-    if (faceIdx > 6) {
+    if (faceIdx > 5) {
       return originalMove; // don't touch face rotations
     }
     if (faceIdx < 0) {
